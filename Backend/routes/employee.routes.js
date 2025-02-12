@@ -1,108 +1,52 @@
 const express = require('express');
 const router = express.Router();
+const Employee = require('../models/employee');
 
-const ObjectId = require('mongoose').Types.ObjectId;
+// ✅ Create Employee (POST)
+router.post('/add', async (req, res) => {
+    try {
+        const { name, employeeNo, jobRole, salary, email, phoneNumber } = req.body;
+        
+        if (!name || !employeeNo || !jobRole || !salary || !email || !phoneNumber) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
 
-const Employee = require('../models/employee.model.js');
-
-// Get , Post, Put, Delete
-// API path: http://localhost:5000/employees
-
-// Get: View all Employee's data
-router.get('/', (req, res)=> {
-    Employee.find().then(doc => 
-        {
-        res.status(200).send(doc);
-    }).catch(err => 
-        {
-        res.status(400).send(err);
-    });
-});
-
-// Get: View a single Employee's data
-router.get('/:id', (req, res)=> {
-    if(ObjectId.isValid(req.params.id))
-    {
-        Employee.findById(req.params.id).then(doc => 
-            {
-            res.status(200).send(doc);
-        }).catch(err => 
-            {
-            res.status(400).send(err);
-        });
-    }
-    else
-    {
-        return res.status(400).send('No record found with id' + req.params.id);
+        const newEmployee = new Employee({ name, employeeNo, jobRole, salary, email, phoneNumber });
+        await newEmployee.save();
+        res.status(201).json({ message: "Employee added successfully!", employee: newEmployee });
+    } catch (error) {
+        console.error("❌ Error adding employee:", error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
 });
 
-// Post: Register a new Employee
-router.post('/', (req, res)=> {
-    let emp = new Employee(
-    {
-        empno : req.body.empno,
-        empname : req.body.empname,
-        jobrole: req.body.jobrole,
-        salary: req.body.salary,
-        email : req.body.email,
-        phone : req.body.phone
-    });
-
-    emp.save().then(doc => 
-        {
-        res.status(200).send(doc);
-    }).catch(err => 
-        {
-        res.status(400).send(err);
-    });
-});
-
-
-// Put: Edit Employee data
-router.put('/:id', (req, res)=> {
-    if(ObjectId.isValid(req.params.id))
-    {
-        let emp = {
-        _id: req.params.id,
-        empno : req.body.empno,
-        empname : req.body.empname,
-        jobrole: req.body.jobrole,
-        salary: req.body.salary,
-        email : req.body.email,
-        phone : req.body.phone
-        };
-
-        Employee.findByIdAndUpdate(req.params.id, {$set :emp}, {new:true}).then(doc => 
-            {
-            res.status(200).send(doc);
-        }).catch(err => 
-            {
-            res.status(400).send(err);
-        });
-    }
-    else
-    {
-        return res.status(400).send('No record found with id' + req.params.id);
+// ✅ Read Employees (GET)
+router.get('/', async (req, res) => {
+    try {
+        const employees = await Employee.find();
+        res.json(employees);
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching employees" });
     }
 });
 
-
-// Delete: Delete an existing Employee
-router.delete('/:id', (req, res)=> {
-    if(ObjectId.isValid(req.params.id))
-    {
-        Employee.findByIdAndRemove(req.params.id).then(doc => 
-            {
-            res.status(200).send(doc);
-        }).catch(err => 
-            {
-            res.status(400).send(err);
-        });
+// ✅ Update Employee (PUT)
+router.put('/update/:id', async (req, res) => {
+    try {
+        const updatedEmployee = await Employee.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json({ message: "Employee updated successfully", employee: updatedEmployee });
+    } catch (error) {
+        res.status(500).json({ message: "Error updating employee" });
     }
-    else
-    {
-        return res.status(400).send('No record found with id' + req.params.id);
+});
+
+// ✅ Delete Employee (DELETE)
+router.delete('/delete/:id', async (req, res) => {
+    try {
+        await Employee.findByIdAndDelete(req.params.id);
+        res.json({ message: "Employee deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Error deleting employee" });
     }
 });
 
